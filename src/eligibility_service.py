@@ -20,8 +20,32 @@ class HousingEligibilityChecker:
     """Validates applicant data and checks it against the council's basic criteria."""
 
     @classmethod
+    def validate_inputs(cls, age, years_resident, income) -> None:
+        """Check types and ranges of the inputs. Raise ValidationError on bad data."""
+        if not isinstance(age, int) or isinstance(age, bool):
+            raise ValidationError("Invalid format: age must be a whole number")
+        if age < 0:
+            raise ValidationError("Invalid age: age cannot be negative")
+        if age > 120:
+            raise ValidationError("Invalid age: age exceeds the maximum allowed value")
+
+        if not isinstance(years_resident, int) or isinstance(years_resident, bool):
+            raise ValidationError("Invalid format: years of residence must be a whole number")
+        if years_resident < 0:
+            raise ValidationError("Invalid period: years of residence cannot be negative")
+        if years_resident > age:
+            raise ValidationError("Invalid period: years of residence cannot exceed age")
+
+        if not isinstance(income, (int, float)) or isinstance(income, bool):
+            raise ValidationError("Invalid format: income must be a number")
+        if income < 0:
+            raise ValidationError("Invalid income: annual income cannot be negative")
+
+    @classmethod
     def evaluate_eligibility(cls, age, years_resident, income) -> EligibilityResult:
-        """Check each rule in turn and return the first one that fails."""
+        """Validate the inputs first, then check each rule in turn."""
+        cls.validate_inputs(age, years_resident, income)
+
         if age < 18:
             return EligibilityResult(False, "Not eligible: applicant must be at least 18 years old")
 
