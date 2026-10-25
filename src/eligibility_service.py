@@ -15,9 +15,17 @@ class EligibilityResult:
         self.is_eligible = is_eligible
         self.message = message
 
+    def __repr__(self):
+        return f"EligibilityResult(eligible={self.is_eligible}, message='{self.message}')"
+
 
 class HousingEligibilityChecker:
     """Validates applicant data and checks it against the council's basic criteria."""
+
+    MIN_AGE = 18
+    MAX_AGE = 120
+    MIN_YEARS_LOCAL = 3
+    MAX_HOUSEHOLD_INCOME = 30000.0
 
     @classmethod
     def validate_inputs(cls, age, years_resident, income) -> None:
@@ -26,7 +34,7 @@ class HousingEligibilityChecker:
             raise ValidationError("Invalid format: age must be a whole number")
         if age < 0:
             raise ValidationError("Invalid age: age cannot be negative")
-        if age > 120:
+        if age > cls.MAX_AGE:
             raise ValidationError("Invalid age: age exceeds the maximum allowed value")
 
         if not isinstance(years_resident, int) or isinstance(years_resident, bool):
@@ -43,20 +51,24 @@ class HousingEligibilityChecker:
 
     @classmethod
     def evaluate_eligibility(cls, age, years_resident, income) -> EligibilityResult:
-        """Validate the inputs first, then check each rule in turn."""
+        """Return an EligibilityResult. Validation runs first, then each rule in turn."""
         cls.validate_inputs(age, years_resident, income)
 
-        if age < 18:
-            return EligibilityResult(False, "Not eligible: applicant must be at least 18 years old")
-
-        if years_resident < 3:
+        if age < cls.MIN_AGE:
             return EligibilityResult(
-                False, "Not eligible: at least 3 years of residence in the borough is required"
+                False, f"Not eligible: applicant must be at least {cls.MIN_AGE} years old"
             )
 
-        if income > 30000:
+        if years_resident < cls.MIN_YEARS_LOCAL:
             return EligibilityResult(
-                False, "Not eligible: annual household income exceeds the £30,000 limit"
+                False,
+                f"Not eligible: at least {cls.MIN_YEARS_LOCAL} years of residence in the borough is required",
+            )
+
+        if income > cls.MAX_HOUSEHOLD_INCOME:
+            return EligibilityResult(
+                False,
+                f"Not eligible: annual household income exceeds the £{cls.MAX_HOUSEHOLD_INCOME:,.0f} limit",
             )
 
         return EligibilityResult(True, "Eligible: you meet the basic criteria to apply")
