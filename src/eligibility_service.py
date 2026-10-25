@@ -21,5 +21,18 @@ class HousingEligibilityChecker:
 
     @classmethod
     def evaluate_eligibility(cls, age, years_resident, income) -> EligibilityResult:
-        """Not implemented yet: always returns 'not eligible' with an empty message."""
-        return EligibilityResult(False, "")
+        """Check each rule in turn and return the first one that fails."""
+        if age < 18:
+            return EligibilityResult(False, "Not eligible: applicant must be at least 18 years old")
+
+        if years_resident < 3:
+            return EligibilityResult(
+                False, "Not eligible: at least 3 years of residence in the borough is required"
+            )
+
+        if income > 30000:
+            return EligibilityResult(
+                False, "Not eligible: annual household income exceeds the £30,000 limit"
+            )
+
+        return EligibilityResult(True, "Eligible: you meet the basic criteria to apply")
