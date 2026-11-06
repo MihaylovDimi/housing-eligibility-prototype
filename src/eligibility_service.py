@@ -1,74 +1,82 @@
-"""
-Module: eligibility_service.py
-Business logic for the Housing Register eligibility pre-check.
-"""
+"""Eligibility rules for the council Housing Register pre-check."""
+
+from dataclasses import dataclass
+
+MIN_AGE = 18
+MAX_AGE = 120
+MIN_YEARS_LOCAL = 3
+MAX_HOUSEHOLD_INCOME = 30_000
 
 
 class ValidationError(Exception):
-    """Raised when user input is missing, of the wrong type or out of range."""
+    """Raised when an input has the wrong type or is out of range."""
 
 
+@dataclass
 class EligibilityResult:
-    """Holds the outcome of an eligibility check."""
+    """The outcome of an eligibility check."""
 
-    def __init__(self, is_eligible: bool, message: str):
-        self.is_eligible = is_eligible
-        self.message = message
-
-    def __repr__(self):
-        return f"EligibilityResult(eligible={self.is_eligible}, message='{self.message}')"
+    is_eligible: bool
+    message: str
 
 
-class HousingEligibilityChecker:
-    """Validates applicant data and checks it against the council's basic criteria."""
+def is_whole_number(value):
+    """Return True for whole numbers, but not for True or False."""
+    return isinstance(value, int) and not isinstance(value, bool)
 
-    MIN_AGE = 18
-    MAX_AGE = 120
-    MIN_YEARS_LOCAL = 3
-    MAX_HOUSEHOLD_INCOME = 30000.0
 
-    @classmethod
-    def validate_inputs(cls, age, years_resident, income) -> None:
-        """Check types and ranges of the inputs. Raise ValidationError on bad data."""
-        if not isinstance(age, int) or isinstance(age, bool):
-            raise ValidationError("Invalid format: age must be a whole number")
-        if age < 0:
-            raise ValidationError("Invalid age: age cannot be negative")
-        if age > cls.MAX_AGE:
-            raise ValidationError("Invalid age: age exceeds the maximum allowed value")
+def validate_inputs(age, years_resident, income):
+    """Raise ValidationError if any input is invalid."""
+    if not is_whole_number(age):
+        raise ValidationError("Invalid format: age must be a whole number")
+    if age < 0:
+        raise ValidationError("Invalid age: age cannot be negative")
+    if age > MAX_AGE:
+        raise ValidationError("Invalid age: age is above the maximum")
 
-        if not isinstance(years_resident, int) or isinstance(years_resident, bool):
-            raise ValidationError("Invalid format: years of residence must be a whole number")
-        if years_resident < 0:
-            raise ValidationError("Invalid period: years of residence cannot be negative")
-        if years_resident > age:
-            raise ValidationError("Invalid period: years of residence cannot exceed age")
+    if not is_whole_number(years_resident):
+        raise ValidationError(
+            "Invalid format: years of residence must be a whole number"
+        )
+    if years_resident < 0:
+        raise ValidationError(
+            "Invalid period: years of residence cannot be negative"
+        )
+    if years_resident > age:
+        raise ValidationError(
+            "Invalid period: years of residence cannot exceed age"
+        )
 
-        if not isinstance(income, (int, float)) or isinstance(income, bool):
-            raise ValidationError("Invalid format: income must be a number")
-        if income < 0:
-            raise ValidationError("Invalid income: annual income cannot be negative")
+    if isinstance(income, bool) or not isinstance(income, (int, float)):
+        raise ValidationError("Invalid format: income must be a number")
+    if income < 0:
+        raise ValidationError("Invalid income: income cannot be negative")
 
-    @classmethod
-    def evaluate_eligibility(cls, age, years_resident, income) -> EligibilityResult:
-        """Return an EligibilityResult. Validation runs first, then each rule in turn."""
-        cls.validate_inputs(age, years_resident, income)
 
-        if age < cls.MIN_AGE:
-            return EligibilityResult(
-                False, f"Not eligible: applicant must be at least {cls.MIN_AGE} years old"
-            )
+def check_eligibility(age, years_resident, income):
+    """Validate the inputs, then apply each rule in turn."""
+    validate_inputs(age, years_resident, income)
 
-        if years_resident < cls.MIN_YEARS_LOCAL:
-            return EligibilityResult(
-                False,
-                f"Not eligible: at least {cls.MIN_YEARS_LOCAL} years of residence in the borough is required",
-            )
+    if age < MIN_AGE:
+        return EligibilityResult(
+            False,
+            f"Not eligible: applicant must be at least {MIN_AGE} years old",
+        )
 
-        if income > cls.MAX_HOUSEHOLD_INCOME:
-            return EligibilityResult(
-                False,
-                f"Not eligible: annual household income exceeds the £{cls.MAX_HOUSEHOLD_INCOME:,.0f} limit",
-            )
+    if years_resident < MIN_YEARS_LOCAL:
+        return EligibilityResult(
+            False,
+            f"Not eligible: at least {MIN_YEARS_LOCAL} years of residence "
+            "in the borough is required",
+        )
 
-        return EligibilityResult(True, "Eligible: you meet the basic criteria to apply")
+    if income > MAX_HOUSEHOLD_INCOME:
+        return EligibilityResult(
+            False,
+            "Not eligible: annual household income is above "
+            f"£{MAX_HOUSEHOLD_INCOME:,}",
+        )
+
+    return EligibilityResult(
+        True, "Eligible: you meet the basic criteria to apply"
+    )
