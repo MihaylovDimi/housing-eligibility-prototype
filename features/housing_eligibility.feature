@@ -29,3 +29,17 @@ Feature: Housing Register eligibility check
     When the details are submitted for checking
     Then a validation error should be raised
     And the error message should be "Invalid age: age cannot be negative"
+
+      @boundary
+  Scenario Outline: Values exactly at the age, residence and income limits
+    Given the resident is <age> years old
+    And the resident has lived in the borough for <years> years
+    And the annual household income is <income> pounds
+    When the details are submitted for checking
+    Then the message should contain "<message>"
+
+    Examples:
+      | age | years | income | message                                        |
+      | 18  | 3     | 30000  | Eligible: you meet the basic criteria to apply |
+      | 17  | 3     | 20000  | at least 18 years old                          |
+      | 30  | 3     | 30001  | annual household income is above £30,000       |
